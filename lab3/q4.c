@@ -12,16 +12,17 @@ int main(int argc, char  *argv[]){
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 	
 	int N = size, len_each = 0;
+
 	char str1[256], str2[256];
-	
+	strcpy(str1, "");
+	strcpy(str2, "");
+
 	if(rank == 0){
 		printf("Enter contents of string1\n");
-		fflush(stdout);
 		gets(str1);
 
 		printf("Enter contents of string1\n");
 		gets(str2);
-		fflush(stdout);
 
 		str_len = strlen(str1);
 
@@ -38,26 +39,25 @@ int main(int argc, char  *argv[]){
 	
 	MPI_Bcast(&len_each, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-	char recv1[len_each], recv2[len_each];	
-	strcpy("", recv1);
-	strcpy("", recv2);
+	char recv1[len_each * 2 + 1], recv2[len_each + 1];	
+	strcpy(recv1, "");
+	strcpy(recv2, "");
 
 	MPI_Scatter(str1, len_each, MPI_CHAR, recv1, len_each, MPI_CHAR, 0, MPI_COMM_WORLD);
 	MPI_Scatter(str2, len_each, MPI_CHAR, recv2, len_each, MPI_CHAR, 0, MPI_COMM_WORLD);
-	fflush(stdout);
 
 	printf("Process %d received %s and %s\n", rank, recv1, recv2);
+
 	indv_cat = strcat(recv1, recv2);
 	printf("Process %d concat %s\n", rank, indv_cat);
 	
-	MPI_Gather(indv_cat, strlen(indv_cat)+1, MPI_CHAR, collected, len_each*2, MPI_CHAR, 0, MPI_COMM_WORLD);
+	MPI_Gather(indv_cat, strlen(indv_cat), MPI_CHAR, collected, len_each * 2, MPI_CHAR, 0, MPI_COMM_WORLD);
 	
 	if(rank == 0){
-		char final[256];
 		fflush(stdout);
-		printf("Recevied at root %s\n", collected); 
+		printf("String collected at root ---> %s\n", collected); 
 	}
-
+  
  	MPI_Finalize();
 	return 0;
 }
