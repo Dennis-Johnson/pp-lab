@@ -11,10 +11,9 @@ int main(int argc, char *argv[]){
   for(i=1; i<=rank+1; i++)
     fact = fact * i;
 
-  MPI_Reduce(&fact, &factsum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Scan(&fact, &factsum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-  if(rank == 0)
-    printf("Series sum for factorial terms = %d\n", factsum);
+  printf("Rank %d: Series sum for factorial terms = %d\n", rank, factsum);
 
   MPI_Finalize();
   return 0;
