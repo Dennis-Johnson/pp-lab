@@ -1,6 +1,13 @@
 #include <stdio.h>
 #include "mpi.h"
 
+/* Using N processes, calculate the series sum of 
+ * factorials upto N terms utilising MPI_Scan
+ * 
+ * factsum = 1! + 2! + ... + N!
+ * 
+ * */
+
 void ErrorHandler(int errno){
    if (errno != MPI_SUCCESS){
      		char errstring[MPI_MAX_ERROR_STRING];
