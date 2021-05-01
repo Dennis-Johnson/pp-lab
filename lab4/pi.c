@@ -21,8 +21,8 @@ int main(int argc, char *argv[]){
   double pi = 0;
 
   MPI_Init(&argc, &argv);
-  errno = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  errno = MPI_Comm_size(MPI_COMM_WORLD, &size);
+  errno = MPI_Comm_rank(MPI_COMM_WORLD, &rank); ErrorHandler(errno);
+  errno = MPI_Comm_size(MPI_COMM_WORLD, &size); ErrorHandler(errno);
 
   double x1 = rank * (1.0 / size);
   double x2 = x1 + (1.0 / size);
@@ -32,12 +32,14 @@ int main(int argc, char *argv[]){
 
   double area = (x2 - x1) * height;
   errno = MPI_Reduce(&area, &pi, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-  
+  ErrorHandler(errno);
+
   printf("Rank %d: x1, x2, midpoint, area: %lf %lf %lf %lf\n", rank, x1, x2, midpoint, area);
 
   if(rank == 0)
     printf("PI = %lf\n", pi);
   
   errno = MPI_Finalize();
+  ErrorHandler(errno);
   return 0;
 }

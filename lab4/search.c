@@ -15,53 +15,52 @@ void ErrorHandler(int errno){
 
 int main(int argc,char* argv[])
 {
-	int rank,size,errno;
+	int rank, size, errno;
+	int i, j, ele, mat[3][3];
+
 	MPI_Init(&argc,&argv);
 	MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
-	int a[3][3];
-	int ele;
-	errno = MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+  errno = MPI_Comm_rank(MPI_COMM_WORLD,&rank); ErrorHandler(errno);
 	errno = MPI_Comm_size(MPI_COMM_WORLD,&size);
+
 	if(rank==0)
 	{	
-		for(int i=0;i<3;i++)
-		{
-			for(int j=0;j<3;j++)
-			{
-				scanf("%d",&a[i][j]);
-			}
-		}
+		for(i=0; i<3; i++)
+			for(j=0; j<3; j++)
+				scanf("%d", &mat[i][j]);
 
-		printf("enter an element to be searched: ");
-		scanf("%d",&ele);
+		printf("Enter an element to search for : ");
+		scanf("%d", &ele);
 	}
-	int b[3];
-	errno=MPI_Scatter(a,3,MPI_INT,b,3,MPI_INT,0,MPI_COMM_WORLD);
+
+	int temp[3];
+	errno = MPI_Scatter(mat, 3, MPI_INT, temp, 3, MPI_INT, 0, MPI_COMM_WORLD);
 	ErrorHandler(errno);
 
-	printf("%d=>", rank);
-	for(int i=0;i<3;i++) {
-		printf("%d ", b[i]);
+	printf("%d: ", rank);
+	for(i=0; i<3; i++) {
+		printf("%d ", temp[i]);
 	}
 	printf("\n");
-	errno=MPI_Bcast(&ele,1,MPI_INT,0,MPI_COMM_WORLD);
+
+	errno = MPI_Bcast(&ele, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	ErrorHandler(errno);
-	int count=0;
-	for(int i=0;i<3;i++)
-	{
-		if(b[i]==ele)
-		{
+
+	int count = 0;
+	for(int i=0; i<3; i++)
+		if(temp[i] == ele)
 			count++;
-		}
-	}
+
 	int total;
-	errno=MPI_Reduce(&count,&total,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD);
+	errno = MPI_Reduce(&count, &total, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
 	ErrorHandler(errno);
-	if(rank==0)
-	{
+
+	if(rank == 0)
 		printf("Number of occurences of %d is %d\n",ele,total);
-	}
-	MPI_Finalize();
+	
+  errno = MPI_Finalize();
+  ErrorHandler(errno);
+  
 	return 0;
 }
 

@@ -17,16 +17,19 @@ int main(int argc, char *argv[]){
   MPI_Init(&argc, &argv);
 
   MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
-  errno = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  errno = MPI_Comm_size(MPI_COMM_WORLD, &size);
+  errno = MPI_Comm_rank(MPI_COMM_WORLD, &rank); ErrorHandler(errno);
+  errno = MPI_Comm_size(MPI_COMM_WORLD, &size); ErrorHandler(errno);
 
   for(i=1; i<=rank+1; i++)
     fact = fact * i;
 
   errno = MPI_Scan(&fact, &factsum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+  ErrorHandler(errno);
 
   printf("Rank %d: Series sum for factorial terms = %d\n", rank, factsum);
 
   errno = MPI_Finalize();
+  ErrorHandler(errno);
+
   return 0;
 }
