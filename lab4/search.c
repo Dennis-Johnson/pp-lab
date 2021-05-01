@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include "mpi.h"
-#include <math.h>
-#include <unistd.h>
 
 /* MPI_Program to read 3x3 matrix, enter an element to search for.
  * Count the number of occurences of said element.
