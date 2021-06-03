@@ -17,6 +17,7 @@
 */
 
 __constant__ int M[MASK_WIDTH];
+
 __global__ void convolution_1D_constantMemMask(
     int *N,        // Array of length 'width'
     int *result,   // Array of length 'width'
@@ -25,6 +26,33 @@ __global__ void convolution_1D_constantMemMask(
 ){
     const int indx = blockIdx.x * blockDim.x + threadIdx.x;
     const int start_index = indx - (mask_width / 2);
+  
+    int accumulator = 0; 
+    for(int j = 0; j < mask_width; j++){
+        if(start_index + j >= 0 && start_index + j < width){
+          accumulator += N[start_index + j] * M[j];
+        }
+    }
+  
+    result[indx] = accumulator;
+}
+
+__global__ void convolution_1D_sharedMemMask(
+    int *N,        // Array of length 'width'
+    int *result,   // Array of length 'width'
+    int width,     // Width of array to be stored in shared memory
+    int mask_width // Width of mask; mask is in constant memory
+){
+    const int indx = blockIdx.x * blockDim.x + threadIdx.x;
+    const int start_index = indx - (mask_width / 2);
+
+    // dynamic shared memory
+    extern __shared__ int shared_arr[];
+
+    // Load into shared memory. 
+    // Indexed using threadIdx.x as shared memory is within a single block.
+    shared_arr[threadIdx.x] = N[indx];
+    __syncthreads();
   
     int accumulator = 0; 
     for(int j = 0; j < mask_width; j++){
@@ -49,6 +77,14 @@ int main(){
     // Device copies
     int *d_N, *d_result;
 
+    // Timing related stuff
+    float timeElapsedA, timeElapsedB;
+    cudaEvent_t beginA, beginB, endA, endB;
+    cudaEventCreate(&beginA);
+    cudaEventCreate(&beginB);
+    cudaEventCreate(&endA);
+    cudaEventCreate(&endB);
+
     // Copy mask to Constant Memory
     cudaMemcpyToSymbol(M, M_h, sizeof(int) * MASK_WIDTH);
 
@@ -60,31 +96,48 @@ int main(){
     cudaMemcpy(d_N, N_h, _sizeN, cudaMemcpyHostToDevice);
     cudaMemcpy(d_result, result_h, _sizeN, cudaMemcpyHostToDevice);
 
+
     cudaError err;
 
-    // a) Launch kernel where mask is stored in constant memory -------------------
+    // a) Launch kernel where mask is stored in constant memory and time it -------
+    cudaEventRecord(beginA, 0);
     convolution_1D_constantMemMask<<<1, WIDTH>>>(d_N, d_result, WIDTH, MASK_WIDTH);
+    cudaEventRecord(endA, 0);
+    cudaEventSynchronize(endA);
+    cudaEventElapsedTime(&timeElapsedA, beginA, endA);
 
     // Retrieve and print result of 1D convolution
     err = cudaMemcpy(result_h, d_result, _sizeN, cudaMemcpyDeviceToHost);
     if(err != cudaSuccess) 
       printf("CUDA error copying to Host: %s\n", cudaGetErrorString(err));
 
+    printf("Result of 1D conv: constant memory MASK:\n");
     for(int i = 0; i < WIDTH; i++)
       printf("%d ", result_h[i]);
-    printf("\n");
+    printf("\n\n");
 
-     // b) Launch kernel where mask is stored in shared memory ------------------
-    //convolution_1D_constantMemMask<<<1, WIDTH>>>(d_N, d_result, WIDTH, MASK_WIDTH);
+
+
+    // b) Launch kernel where array N is to be stored in dynamic shared memory ------
+    // A third argument is passed indicating the size of shared memory required.
+    cudaEventRecord(endB, 0);
+    convolution_1D_sharedMemMask<<<1, WIDTH, _sizeN>>>(d_N, d_result, WIDTH, MASK_WIDTH);
+    cudaEventRecord(endB, 0);
+    cudaEventSynchronize(endB);
+    cudaEventElapsedTime(&timeElapsedB, beginB, endB);
 
     // Retrieve and print result of 1D convolution
     err = cudaMemcpy(result_h, d_result, _sizeN, cudaMemcpyDeviceToHost);
     if(err != cudaSuccess) 
       printf("CUDA error copying to Host: %s\n", cudaGetErrorString(err));
 
+    printf("Result of 1D conv: constant memory MASK & shared memory N:\n");
     for(int i = 0; i < WIDTH; i++)
       printf("%d ", result_h[i]);
-    printf("\n");
+    printf("\n\n");
+
+    printf("Time elapsed for kernel a) : %f\n", timeElapsedA);
+    printf("Time elapsed for kernel b) : %f\n", timeElapsedB);
      
     cudaFree(d_N);
     cudaFree(M);
