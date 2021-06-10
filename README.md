@@ -21,3 +21,8 @@ Specify number of MPI processes -np
 
 `mpirun -np 4 my_app`
 
+# Running CUDA Examples
+
+Everything CUDA related was done using Google Colab's free Nvidia GPUs.
+
+Copy the required `.cu` file contents to the cell with double magic `%%cu` on top in `cuda_c_template.ipynb`
